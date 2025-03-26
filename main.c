@@ -31,10 +31,16 @@ struct Body
     uint16_t qclass;
 };
 
-void encodeURL(char *url);
+char *encodeURL(char *url);
 
 int main(int argc, char const *argv[])
 {
+    if (argc != 2)
+    {
+        printf("No URL Supplied\n");
+        return -1;
+    }
+    printf("DNS Resolver Tool:\n");
     // http://www.tcpipguide.com/free/t_DNSMessageHeaderandQuestionSectionFormat.htm
     struct Header header;
     header.id = 30; // ID can be anything
@@ -51,24 +57,70 @@ int main(int argc, char const *argv[])
     header.arcount = 0;
 
     struct Body body;
+    body.qname = encodeURL(argv[1]);
     body.qclass = 1;
     body.qtype = 1;
 
+    // Concatanating everything together
+    
     return 0;
 }
 
-void encodeURL(char *url)
+char *encodeURL(char *url)
 {
 
-    /// www.google.com
-    // 3www6google3com
-    // Recursion?
     // https://www.educative.io/answers/splitting-a-string-using-strtok-in-c
-    // Trim http:// or https:// if exists
-    char *token = strtok(url, "//");
-    token = strtok(NULL, "/");
-    printf("\n%s\n", token);
 
-    url = token;
+    // Check for HTTP or HTTPS existence
+    // Trim http:// or https:// if exists
+    // https://stackoverflow.com/questions/12784766/check-substring-exists-in-a-string-in-c
+    // https is superset of http anyway
+    if (strstr(url, "http"))
+    {
+        char *token = strtok(url, "//");
+        token = strtok(NULL, "/");
+        url = token;
+    }
+    // Removing any subdomain
+    char *subdomain = strtok(url, "/");
+    url = subdomain;
     printf("%s\n\n", url);
+
+    // Now split at '.'
+    /// www.google.com
+    // 3www6google3com0
+    // Original String Size + 2 (Front and back 0)
+    // char encoded_url[strlen(url) + 3]; // For the \0 (strlen doesnt count \0)
+    // // First element = strlen(first group)
+
+    // char *delim = strtok(url, ".");
+    // while (delim != NULL)
+    // {
+    //     strcat(encoded_url, strlen(delim));
+    //     strcat(encoded_url, delim);
+    //     printf("%s\n", encoded_url);
+    //     delim = strtok(NULL, ".");
+    // }
+    // encoded_url[strlen(encoded_url) - 1] = '0';
+    char encoded_url[256] = ""; // Ensure this is large enough
+
+    // Tokenize the string by '.'
+    char *token = strtok(url, ".");
+    while (token != NULL)
+    {
+        // Convert the length of the token to a string
+        char lenStr[10];
+        sprintf(lenStr, "%d", (int)strlen(token));
+
+        // Append the length and then the token to the encoded URL
+        strcat(encoded_url, lenStr);
+        strcat(encoded_url, token);
+
+        // Get next token
+        token = strtok(NULL, ".");
+    }
+    // Append the final '0'
+    strcat(encoded_url, "0");
+
+    printf("Encoded URL: %s\n", encoded_url);
 }
