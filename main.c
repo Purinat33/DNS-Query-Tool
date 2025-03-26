@@ -5,6 +5,9 @@
 // But Host Order is free game
 #include <arpa/inet.h> // For H and N conversion
 
+// Get DNS server address
+// #include <resolv.h>
+
 // For socket
 #include <sys/socket.h>
 #include <string.h>
@@ -31,16 +34,30 @@ struct Body
     uint16_t qclass;
 };
 
+struct Packet
+{
+    struct Header H;
+    struct Body B;
+};
+
 char *encodeURL(char *url);
 
 int main(int argc, char const *argv[])
 {
-    if (argc != 2)
+    if (argc < 2)
     {
         printf("No URL Supplied\n");
         return -1;
     }
+
+    if (argc < 3)
+    {
+        printf("No DNS Server supploed\n");
+        return -1;
+    }
     printf("DNS Resolver Tool:\n");
+    printf("DNS Server: %s\n", argv[2]);
+
     // http://www.tcpipguide.com/free/t_DNSMessageHeaderandQuestionSectionFormat.htm
     struct Header header;
     header.id = 30; // ID can be anything
@@ -62,7 +79,13 @@ int main(int argc, char const *argv[])
     body.qtype = 1;
 
     // Concatanating everything together
-    
+    struct Packet packet;
+    packet.H = header;
+    packet.B = body;
+
+    // Before sending data to the socket we have to serialize the data
+    // Because we have strings (pointers)
+
     return 0;
 }
 
@@ -84,7 +107,7 @@ char *encodeURL(char *url)
     // Removing any subdomain
     char *subdomain = strtok(url, "/");
     url = subdomain;
-    printf("%s\n\n", url);
+    // printf("%s\n\n", url);
 
     // Now split at '.'
     /// www.google.com
@@ -123,4 +146,5 @@ char *encodeURL(char *url)
     strcat(encoded_url, "0");
 
     printf("Encoded URL: %s\n", encoded_url);
+    return encoded_url;
 }
